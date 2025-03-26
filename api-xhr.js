@@ -1,148 +1,401 @@
-//TODO#1 - DomContentLoaded 모든 HTML 문서가 로드된 상태 - 그래야 DOM element에 접근할 수 있음
-const SERVER_URL="http://220.67.216.11:8000";
-window.addEventListener("DOMContentLoaded",function(){
-    //TODO#2 - strict 모드 설정
+const flightScheduleApi = (function(){
     'use strict';
+    const SERVICE_KEY = "oqWzAGWsxHR/cre4r5C2TJD0qw9ldrsGzxIAnDQRIvb31Gt6m/EDMUhczdZ5gIFINhj/QBbAVRTnFuTnBMOJyw==";
 
-    const loginForm = document.getElementById("login-form");
-    //#TODO#5 login form validation 
-    // 아이디 비밀번호 공백체크 및 focus 처리
+    //운행스케줄 api
+    const api = new Object();
     
-    const validateForm=function(form){
-        if(form['userId'].value.trim() == '' ){
-            alert("userId empty!");
-            form['userId'].focus();
-            return false;
-        }
-        if(form['userPassword'].value.trim() == '' ){
-            alert("userPassword empty!");
-            form['userPassword'].focus();
-            return false;
-        }
+    async function getAirlineList(){
+        let url = 'http://apis.data.go.kr/1613000/DmstcFlightNvgInfoService/getAirmanList'; /*URL*/
+        let queryParams = '?' + encodeURIComponent('serviceKey') + '='+SERVICE_KEY; /*Service Key*/
+        queryParams += '&' + encodeURIComponent('_type') + '=' + encodeURIComponent('json'); /**/
+        url+=queryParams;
+        //TODO#1 항공사 리스트 구하기
+
+
+        //FIXME#1-1 테스트용 나중에 삭제해주세요
+        const result =`[
+            {
+              "airlineId": "AAR",
+              "airlineNm": "아시아나항공"
+            },
+            {
+              "airlineId": "ABL",
+              "airlineNm": "에어부산"
+            },
+            {
+              "airlineId": "ASV",
+              "airlineNm": "에어서울"
+            },
+            {
+              "airlineId": "ESR",
+              "airlineNm": "이스타항공"
+            },
+            {
+              "airlineId": "FGW",
+              "airlineNm": "플라이강원"
+            },
+            {
+              "airlineId": "HGG",
+              "airlineNm": "하이에어"
+            },
+            {
+              "airlineId": "JJA",
+              "airlineNm": "제주항공"
+            },
+            {
+              "airlineId": "JNA",
+              "airlineNm": "진에어"
+            },
+            {
+              "airlineId": "KAL",
+              "airlineNm": "대한항공"
+            },
+            {
+              "airlineId": "TWB",
+              "airlineNm": "티웨이항공"
+            }
+          ]`;
+
+        return JSON.parse(result);
     }
 
-    //TODO#3 loginForm submit(전송) 이벤트 등록 submit 이벤트는 로그인 button을 클릭했을때 발생됨 
-    // 단 로그인 버튼의 button type = 'submit'이어야 함, type='button'동작 안 함
-    loginForm.addEventListener("submit",function(event){
-        event.preventDefault();
-        //TODO#4 loginForm validation 실행 
-        //event.target = form 자체를 의미함.
-        if( validateForm(event.target)==false ){
-            return ;
+    api.getAirportList = async function(){
+        let url = "http://apis.data.go.kr/1613000/DmstcFlightNvgInfoService/getArprtList";
+        let queryParams = '?' + encodeURIComponent('serviceKey') + '='+SERVICE_KEY; /*Service Key*/
+            queryParams += '&' + encodeURIComponent('_type') + '=' + encodeURIComponent('json'); /**/
+            url+=queryParams;
+            //TODO#2 공항리스트 구하기
+
+
+        //FIXME#2-1 테스트용 데이터 나중에 삭제해주세요.
+        const result = `
+        [
+            {
+              "airportId": "NAARKJB",
+              "airportNm": "무안"
+            },
+            {
+              "airportId": "NAARKJJ",
+              "airportNm": "광주"
+            },
+            {
+              "airportId": "NAARKJK",
+              "airportNm": "군산"
+            },
+            {
+              "airportId": "NAARKJY",
+              "airportNm": "여수"
+            },
+            {
+              "airportId": "NAARKNW",
+              "airportNm": "원주"
+            },
+            {
+              "airportId": "NAARKNY",
+              "airportNm": "양양"
+            },
+            {
+              "airportId": "NAARKPC",
+              "airportNm": "제주"
+            },
+            {
+              "airportId": "NAARKPK",
+              "airportNm": "김해"
+            },
+            {
+              "airportId": "NAARKPS",
+              "airportNm": "사천"
+            },
+            {
+              "airportId": "NAARKPU",
+              "airportNm": "울산"
+            },
+            {
+              "airportId": "NAARKSI",
+              "airportNm": "인천"
+            },
+            {
+              "airportId": "NAARKSS",
+              "airportNm": "김포"
+            },
+            {
+              "airportId": "NAARKTH",
+              "airportNm": "포항"
+            },
+            {
+              "airportId": "NAARKTN",
+              "airportNm": "대구"
+            },
+            {
+              "airportId": "NAARKTU",
+              "airportNm": "청주"
+            }
+          ]
+        `;
+        return JSON.parse(result);
+    }
+
+    /* 
+        * @param {*} depAirportId  출발공항 아이디
+        * @param {*} arrAirportId  도착공항 아이디
+        * @param {*} depPlandTime  출발시간 : 20230321
+        * @param {*} airlineId     항공사 아이디
+    */
+    //getFlightSchedule("NAARKJJ","NAARKPC","20201202","AAR");
+    async function getFlightSchedule(depAirportId,arrAirportId,depPlandTime,airlineId){
+        let url = "http://apis.data.go.kr/1613000/DmstcFlightNvgInfoService/getFlightOpratInfoList";
+        let queryParams = "?serviceKey="  + encodeURIComponent(SERVICE_KEY);
+        queryParams += '&' + encodeURIComponent('pageNo') + '=' + encodeURIComponent('1'); /**/
+        queryParams += '&' + encodeURIComponent('numOfRows') + '=' + encodeURIComponent('10'); /**/
+        queryParams += '&' + encodeURIComponent('_type') + '=' + encodeURIComponent('json'); /**/
+        queryParams += '&' + encodeURIComponent('depAirportId') + '=' + encodeURIComponent(depAirportId); /**/
+        queryParams += '&' + encodeURIComponent('arrAirportId') + '=' + encodeURIComponent(arrAirportId); /**/
+        queryParams += '&' + encodeURIComponent('depPlandTime') + '=' + encodeURIComponent(depPlandTime); /**/
+        queryParams += '&' + encodeURIComponent('airlineId') + '=' + encodeURIComponent(airlineId); /**/
+        url = url + queryParams;
+        console.log(url);
+
+        const response = await fetch(url);
+        const json = await response.json();
+
+        //TODO#3 항공운항정보 조회
+        //FIXME#3
+        const result =`[
+            {
+              "airlineNm": "아시아나항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221125,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221030,
+              "economyCharge": 57900,
+              "prestigeCharge": 0,
+              "vihicleId": "OZ8141"
+            },
+            {
+              "airlineNm": "아시아나항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221620,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221525,
+              "economyCharge": 57900,
+              "prestigeCharge": 0,
+              "vihicleId": "OZ8145"
+            },
+            {
+              "airlineNm": "아시아나항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221925,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221830,
+              "economyCharge": 57900,
+              "prestigeCharge": 0,
+              "vihicleId": "OZ8149"
+            },
+            {
+              "airlineNm": "제주항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221100,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221010,
+              "vihicleId": "7C601",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "제주항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221910,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221820,
+              "vihicleId": "7C605",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "진에어",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221110,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221015,
+              "vihicleId": "LJ593",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "진에어",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221535,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221440,
+              "vihicleId": "LJ597",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "진에어",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303222005,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221910,
+              "vihicleId": "LJ595",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "대한항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221035,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303220940,
+              "economyCharge": 57900,
+              "prestigeCharge": 82900,
+              "vihicleId": "KE1603"
+            },
+            {
+              "airlineNm": "대한항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303222045,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221950,
+              "economyCharge": 57900,
+              "prestigeCharge": 82900,
+              "vihicleId": "KE1627"
+            },
+            {
+              "airlineNm": "티웨이항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303220920,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303220825,
+              "vihicleId": "TW9901",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "티웨이항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221300,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221210,
+              "vihicleId": "TW903",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            },
+            {
+              "airlineNm": "티웨이항공",
+              "arrAirportNm": "제주",
+              "arrPlandTime": 202303221605,
+              "depAirportNm": "광주",
+              "depPlandTime": 202303221510,
+              "vihicleId": "TW9903",
+              "economyCharge": "",
+              "prestigeCharge": ""
+            }
+          ]`;
+        return JSON.parse(result);
+    }
+
+    api.search=async function(depAirportId,arrAirportId,depPlandTime){
+        const airlineList = await getAirlineList();
+
+        //조회로직 실행
+        depPlandTime = depPlandTime.replaceAll("-","");
+        const promiseList = [];
+
+        for (const airline of airlineList) {
+            const promise = getFlightSchedule(depAirportId,arrAirportId,depPlandTime,airline.airlineId);
+            //TODO#4 항공사별 운항정보를 얻어서 하나의 리스트로 리턴
         }
 
-        const userId = event.target['userId'].value;
-        const userPassword = event.target['userPassword'].value;
+        return result;
+    }
 
-        //TODO#6 로그인 api 호출 
-        // 로그인이 성공하면 동작할 function(user){...} 함수를 parameter로 전달
-        
-        doLogin(userId, userPassword, function(user){
-            //TODO#9 로그인 성공시 loginSuccess 함수 로직
-            //success ui 디자인
-            const loginWrapper = document.getElementById("login-wrapper");
-            loginWrapper.setAttribute("style","display:none;");
-            const loginSuccess = document.getElementById("login-success");
-            loginSuccess.setAttribute("style","display:block");
-            
-            const loginUserId = document.getElementById("login-userId");
-            const loginUserName = document.getElementById("login-userName");
-            const loginCartId = document.getElementById("login-cartId");
+    return api;
+})();
 
-            loginUserId.innerText=user.userId;
-            loginUserName.innerText=user.userName;
-            loginCartId.innerText=user.cartId;
+window.addEventListener("DOMContentLoaded",async function(){
+    'use strict'
+    
+    const departureId = document.getElementById("departureId");
+    const arrivalId = document.getElementById("arrivalId");
+    
+    //비행날짜
+    const plandDate = document.getElementById("plandDate");
+    //TODO#5 기본 날짜를 오늘로 설정
+    plandDate.value = new Date().toISOString().substring(0,10);
+    
+    //FIXME #6 공항리스트 호출.
+    const airportList = [];
+    
 
-            //TODO#10 카트 api 호출
-            //cart api 호출이 성공하면 실행할 function(items){} 함수를 parameter로 전달 
-            getCartItems(user.userId, user.cartId, function(items){
-                //TODO#13 displayCartItems 실행
-                const cartTable = document.getElementById("cart-table");
-                const body = cartTable.getElementsByTagName("tbody")[0];
-                const intl = new Intl.NumberFormat();
+    console.log(airportList);
 
-                for (const item of items) {
-                    const tr = document.createElement("tr");
-                    const td1 = document.createElement("td");
-                    const td2 = document.createElement("td");
-                    const td3 = document.createElement("td");
-                    const td4 = document.createElement("td");
-                    const td5 = document.createElement("td");
-                    td1.innerText=item.productId;
-                    td2.innerText=item.name;
-                    td3.innerText=intl.format(item.price);
-                    td4.innerText=intl.format(item.amount);
-                    td5.innerText= intl.format(item.totalPrice);
-                    tr.append(td1,td2,td3,td4,td5);
-                    body.append(tr);
-                }
-            });
+    for (const item of airportList) {
+    //TODO#7  selectBox (departureId,arrivalId)에 공항리스트 할당
 
-        });
+    }
 
+    const validateForm = function(form){
+        const departureId = form["departureId"];
+        const arrivalId = form["arrivalId"];
+        const departureIdValue  = departureId.options[departureId.selectedIndex].value;
+        const arrivalIdValue  = arrivalId.options[arrivalId.selectedIndex].value;
+        //TODO#8 form validation
+        // departureId, arrivalId 선택여부 체크
+        // 출발(공항) == 도착(공항) retun false
+
+        return true;
+    };
+
+    const findForm = document.getElementById("find-form");
+    
+    findForm.addEventListener("submit",async function(event){
+        event.preventDefault();
+        if(validateForm(event.target)==false){
+            return;
+        }
+
+        //schedule 조회
+        try{
+            const depPlandTime = document.getElementById("plandDate").value;
+            const items = await flightScheduleApi.search(departureId.value,arrivalId.value,depPlandTime);
+            searchResult(items);
+
+        }catch(e){
+            alert(e);
+        }
     });
+
 });
 
-//TODO#7 로그인 처리
-function doLogin(userId, userPassword, loginSuccess){
+function searchResult(items){
 
-    const xhr = new XMLHttpRequest();
-    const url = SERVER_URL+"/api/users/login";
+    const scheduleTbl = document.getElementById("schedule-tbl");
+    const tbody = scheduleTbl.getElementsByTagName("tbody")[0];
 
-    const data = {
-        userId : userId,
-        userPassword :userPassword
+    while(tbody.firstChild){
+       //TODO#9tbody에 담겨있는 모든 <tr> 삭제
     }
-    
-    xhr.addEventListener("load",function(){
-        if(this.status==200){
-            const user = this.response;
-            //TODO#8 로그인 성공시 loginSuccess 함수호출
-            loginSuccess(user);
-        }else{
-            alert(`id, password 를 확인해주세요! : ${this.status} :  ${this.response.message}` );
-            console.log(response);
-            throw new Error(this.response);
-        }
-    });
 
-    xhr.addEventListener("error",function(e){
-        alert('network error');
-    });
+    for(let i=0; i<items.length; i++){
 
-    xhr.open("POST",url);
-    xhr.setRequestHeader("content-type","application/json");
-    xhr.responseType="json";
-    xhr.send(JSON.stringify(data));
+        const tr = document.createElement("tr");
+        //TODO#10 tbdoy에 <tr><td>...</td> ... </tr> 만들어서 넣기
+        //숫자 서식 관려해서는 다음을 참고하기
+        //https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat 
+        //날짜 변환에 대해서는 convertDate(str) 함수를 이용해주세요
+
+        tbody.append(tr);
+    }
 }
 
-//TODO#11 cart-api 호출
-function getCartItems(userId, cartId, displayCartItems){
-    const xhr = new XMLHttpRequest();
-    const url =SERVER_URL + "/api/nhnmart/shopping-cart/" + cartId;
-
-    xhr.addEventListener("load", function(){
-        if(this.status==200){
-            console.log(this.response);
-            const items = this.response;
-            //TODO#12 cart-api가 정상적으로 호출되면
-            //parameter로 전달받은 displayCartIitems() 함수 호출
-            displayCartItems(items);
-        }else{
-            console.log(this.response);
-            alert("cart-api error");
-            throw new Error(this.response);
-        }
-    });
-
-    xhr.addEventListener("error",function(){
-        alert('network error');
-    })
-
-    xhr.open("GET",url);
-    xhr.setRequestHeader("content-type","application/json");
-    xhr.setRequestHeader("X-USER-ID", userId);
-    xhr.responseType="json";
-    xhr.send('');
-    
+function convertDate(str){
+    str = str.toString();
+    //202303221125 -> 2023 03 22 11:25
+    return str.substring(0,4) 
+            + "-" + str.substring(4,6)
+            + "-" + str.substring(6,8) 
+            + " " + str.substring(8,10) 
+            + ":" + str.substring(10,12);
 }
